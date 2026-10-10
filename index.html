@@ -1,1 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dimah Academy - Student Report Generator</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --secondary: #0d9488;
+      --accent: #f59e0b;
+      --light: #f8fafc;
+      --dark: #0f172a;
+    }
 
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+    body { background-color: #f1f5f9; color: var(--dark); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Login Screen */
+    #login-screen {
+      display: flex; justify-content: center; align-items: center; height: 100vh;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+    }
+    .login-card {
+      background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      width: 100%; max-width: 400px; text-align: center;
+    }
+    .login-card h2 { color: var(--primary); margin-bottom: 0.5rem; }
+    .login-card p { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    /* Form Styles */
+    .form-group { margin-bottom: 1rem; text-align: left; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: #334155; }
+    .form-control { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; }
+    .btn {
+      background: var(--primary); color: white; border: none; padding: 0.6rem 1.2rem;
+      border-radius: 6px; cursor: pointer; font-weight: 600; transition: background 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-secondary { background: var(--secondary); }
+    .btn-accent { background: var(--accent); color: var(--dark); }
+    .btn-block { width: 100%; }
+
+    /* App Dashboard */
+    #app-dashboard { display: none; flex: 1; flex-direction: column; }
+    header.nav-header {
+      background: var(--primary); color: white; padding: 1rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .nav-tabs { display: flex; background: #e2e8f0; padding: 0.5rem 2rem; gap: 1rem; overflow-x: auto; }
+    .tab-btn {
+      padding: 0.5rem 1rem; background: transparent; border: none; cursor: pointer;
+      font-weight: 600; color: #475569; border-radius: 6px; white-space: nowrap;
+    }
+    .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+    .container { padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%; flex: 1; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; background: white; margin-top: 1rem; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; }
+    th { background: #f8fafc; color: #334155; font-weight: 600; }
+
+    /* School Header with Pre-integrated Logo */
+    .school-header {
+      display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+      border-bottom: 2px solid var(--primary); padding-bottom: 1rem; margin-bottom: 1.5rem; text-align: left;
+    }
+    .school-logo {
+      width: 75px; height: 75px; object-fit: contain; background: #f1f5f9; padding: 5px; border-radius: 50%; border: 2px solid var(--primary);
+    }
+    .school-info { text-align: center; }
+    .school-name { font-size: 1.8rem; font-weight: bold; color: var(--primary); text-transform: uppercase; }
+    .school-address { font-size: 0.85rem; color: #475569; margin-top: 0.1rem; }
+    .school-motto { font-style: italic; color: var(--secondary); font-size: 0.85rem; margin-top: 0.2rem; }
+
+    /* Report Card & Master Sheet Styles */
+    .report-card {
+      background: white; border: 3px double var(--primary); padding: 2rem; border-radius: 8px;
+      max-width: 850px; margin: 0 auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .student-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; background: #f8fafc; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+    .signatures { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1rem; }
+    .sig-box { text-align: center; border-top: 1px solid #94a3b8; width: 200px; padding-top: 0.5rem; font-size: 0.85rem; }
+
+    /* App Footer */
+    footer.app-footer {
+      background: #0f172a; color: #94a3b8; text-align: center; padding: 1rem; font-size: 0.85rem; margin-top: auto;
+    }
+
+    /* Print Styles: Hides dashboard nav and Developer Footer on Report/Master print */
+    @media print {
+      body { background: white; color: black; }
+      header.nav-header, .nav-tabs, .btn, footer.app-footer, .no-print { display: none !important; }
+      .container { padding: 0; }
+      .report-card, #master-sheet-view { border: none; box-shadow: none; width: 100%; max-width: 100%; }
+      .tab-content { display: block !important; }
+      #tab-students, #tab-ca { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <h2>Dimah Academy</h2>
+      <p>Form Teacher Portal</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="username" class="form-control" value="teacher" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" class="form-control" value="admin123" required>
+        </div>
+        <button type="submit" class="btn btn-block">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. MAIN DASHBOARD -->
+  <div id="app-dashboard">
+    <header class="nav-header">
+      <div>
+        <h2 style="margin: 0; font-size: 1.3rem;">Dimah Academy Portal</h2>
+        <small style="opacity: 0.8;">Kuje Abuja | Knowledge & Practice</small>
+      </div>
+      <button class="btn btn-secondary" onclick="logout()">Logout</button>
+    </header>
+
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab(event, 'tab-students')">1. Students Setup</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-ca')">2. CA Sheets (By Subject)</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-master')">3. Master Result Sheet</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-report')">4. Student Report Card</button>
+    </nav>
+
+    <div class="container">
+      <!-- TAB 1: STUDENT SETUP -->
+      <div id="tab-students" class="tab-content active">
+        <h3>Manage Students Information</h3>
+        <p style="color: #64748b; margin-bottom: 1rem;">Add students belonging to your class/arm.</p>
+        <form id="student-form" style="display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 1rem; background: white; padding: 1rem; border-radius: 8px;">
+          <input type="text" id="std-name" class="form-control" placeholder="Student Full Name" required>
+          <input type="text" id="std-adm" class="form-control" placeholder="Admission No." required>
+          <input type="text" id="std-class" class="form-control" placeholder="Class (e.g. JSS 1)" required>
+          <input type="text" id="std-arm" class="form-control" placeholder="Arm/Section (e.g. Gold)" required>
+          <button type="submit" class="btn">Add Student</button>
+        </form>
+
+        <table id="students-table">
+          <thead>
+            <tr>
+              <th>Adm No</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Arm/Section</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- TAB 2: CA SHEETS -->
+      <div id="tab-ca" class="tab-content">
+        <h3>Subject CA Sheets Input</h3>
+        <p style="color: #64748b; margin-bottom: 1rem;">Enter Continuous Assessment (30) and Exam scores (70) per subject.</p>
+        
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+          <input type="text" id="subject-name" class="form-control" placeholder="Subject Name (e.g., Mathematics)" style="max-width: 300px;">
+          <button class="btn" onclick="loadSubjectSheet()">Open/Create CA Sheet</button>
+        </div>
+
+        <div id="ca-sheet-container" style="display:none; background: white; padding: 1rem; border-radius: 8px;">
+          <h4 id="active-subject-title" style="color: var(--primary); margin-bottom: 1rem;"></h4>
+          <table id="ca-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>CA Score (Max 30)</th>
+                <th>Exam Score (Max 70)</th>
+                <th>Total (100)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="saveCAScores()">Save Subject Scores</button>
+        </div>
+      </div>
+
+      <!-- TAB 3: MASTER RESULT SHEET -->
+      <div id="tab-master" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;" class="no-print">
+          <h3>Master Result Sheet</h3>
+          <div>
+            <button class="btn" onclick="generateMasterSheet()">Refresh Scores</button>
+            <button class="btn btn-secondary" onclick="window.print()">Print / Save PDF</button>
+          </div>
+        </div>
+
+        <div id="master-sheet-view" style="background: white; padding: 1.5rem; border-radius: 8px; overflow-x: auto;">
+          <div class="school-header">
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231e3a8a'/><text x='50' y='58' font-size='36' font-weight='bold' fill='white' text-anchor='middle'>DA</text></svg>" alt="Dimah Academy Logo" class="school-logo">
+            <div class="school-info">
+              <div class="school-name">Dimah Academy</div>
+              <div class="school-address">Opposite Street to Dafara Junction Road, Kuje Abuja</div>
+              <div class="school-motto">Motto: Knowledge and Practice</div>
+            </div>
+          </div>
+          <h4 style="margin-bottom: 1rem; text-align: center; text-decoration: underline; color: var(--primary);">OFFICIAL MASTER RESULT SHEET</h4>
+          <table id="master-table">
+            <thead><!-- Generated dynamically --></thead>
+            <tbody><!-- Generated dynamically --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: STUDENT REPORT CARD -->
+      <div id="tab-report" class="tab-content">
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;" class="no-print">
+          <select id="report-student-select" class="form-control" style="max-width: 300px;" onchange="renderReportCard()">
+            <option value="">-- Select Student --</option>
+          </select>
+          <button class="btn btn-secondary" onclick="window.print()">Print Report Sheet</button>
+        </div>
+
+        <div id="report-card-view" class="report-card">
+          <div class="school-header">
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231e3a8a'/><text x='50' y='58' font-size='36' font-weight='bold' fill='white' text-anchor='middle'>DA</text></svg>" alt="Dimah Academy Logo" class="school-logo">
+            <div class="school-info">
+              <div class="school-name">Dimah Academy</div>
+              <div class="school-address">Opposite Street to Dafara Junction Road, Kuje Abuja</div>
+              <div class="school-motto">Motto: Knowledge and Practice</div>
+            </div>
+          </div>
+          <h3 style="margin-bottom: 1rem; text-align: center; color: var(--primary);">STUDENT PROGRESS REPORT SHEET</h3>
+
+          <div class="student-meta">
+            <div><strong>Name:</strong> <span id="card-name">-</span></div>
+            <div><strong>Adm No:</strong> <span id="card-adm">-</span></div>
+            <div><strong>Class:</strong> <span id="card-class">-</span></div>
+            <div><strong>Arm/Section:</strong> <span id="card-arm">-</span></div>
+            <div><strong>Class Population:</strong> <span id="card-pop">-</span></div>
+            <div><strong>Position:</strong> <span id="card-pos">-</span></div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>CA (30)</th>
+                <th>Exam (70)</th>
+                <th>Total (100)</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody id="card-scores-body"></tbody>
+          </table>
+
+          <div style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="background: #f1f5f9; padding: 1rem; border-radius: 6px;">
+              <div><strong>Total Score:</strong> <span id="card-total-score">0</span></div>
+              <div><strong>Average Score:</strong> <span id="card-avg-score">0</span>%</div>
+            </div>
+            <div style="background: #f1f5f9; padding: 1rem; border-radius: 6px;">
+              <strong>Teacher's Remark:</strong>
+              <p id="card-comment" style="font-style: italic; color: var(--primary); margin-top: 0.3rem;">-</p>
+            </div>
+          </div>
+
+          <div class="signatures">
+            <div class="sig-box">Form Teacher's Signature</div>
+            <div class="sig-box">Principal's Signature</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APP FOOTER -->
+    <footer class="app-footer">
+      Developed by MARAL COMPUTERS KADUNA
+    </footer>
+  </div>
+
+  <script>
+    let students = JSON.parse(localStorage.getItem('dimah_students')) || [];
+    let caData = JSON.parse(localStorage.getItem('dimah_ca_data')) || {};
+
+    // Authentication
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-dashboard').style.display = 'flex';
+      renderStudents();
+    });
+
+    function logout() {
+      document.getElementById('app-dashboard').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+
+    // Tabs Switcher
+    function switchTab(evt, tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      if (evt && evt.target) {
+        evt.target.classList.add('active');
+      }
+
+      if (tabId === 'tab-master') generateMasterSheet();
+      if (tabId === 'tab-report') populateReportSelect();
+    }
+
+    // --- STUDENT MANAGEMENT ---
+    document.getElementById('student-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const student = {
+        name: document.getElementById('std-name').value,
+        adm: document.getElementById('std-adm').value,
+        class: document.getElementById('std-class').value,
+        arm: document.getElementById('std-arm').value
+      };
+      students.push(student);
+      localStorage.setItem('dimah_students', JSON.stringify(students));
+      e.target.reset();
+      renderStudents();
+    });
+
+    function renderStudents() {
+      const tbody = document.querySelector('#students-table tbody');
+      tbody.innerHTML = students.map((s, idx) => `
+        <tr>
+          <td>${s.adm}</td>
+          <td>${s.name}</td>
+          <td>${s.class}</td>
+          <td>${s.arm}</td>
+          <td><button class="btn" style="background:#ef4444; padding:0.2rem 0.5rem; font-size:0.8rem;" onclick="deleteStudent(${idx})">Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function deleteStudent(idx) {
+      students.splice(idx, 1);
+      localStorage.setItem('dimah_students', JSON.stringify(students));
+      renderStudents();
+    }
+
+    // --- CA SHEETS MANAGEMENT ---
+    let currentSubject = '';
+    function loadSubjectSheet() {
+      currentSubject = document.getElementById('subject-name').value.trim();
+      if (!currentSubject) return alert('Enter a valid subject name');
+
+      document.getElementById('active-subject-title').innerText = `CA Sheet: ${currentSubject}`;
+      document.getElementById('ca-sheet-container').style.display = 'block';
+
+      const tbody = document.querySelector('#ca-table tbody');
+      tbody.innerHTML = students.map(s => {
+        const scores = (caData[currentSubject] && caData[currentSubject][s.adm]) || { ca: 0, exam: 0 };
+        return `
+          <tr>
+            <td>${s.name} (${s.adm})</td>
+            <td><input type="number" max="30" class="form-control ca-in" data-adm="${s.adm}" value="${scores.ca}"></td>
+            <td><input type="number" max="70" class="form-control exam-in" data-adm="${s.adm}" value="${scores.exam}"></td>
+            <td id="tot-${s.adm}">${Number(scores.ca) + Number(scores.exam)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function saveCAScores() {
+      if (!caData[currentSubject]) caData[currentSubject] = {};
+
+      document.querySelectorAll('.ca-in').forEach(caInput => {
+        const adm = caInput.dataset.adm;
+        const examInput = document.querySelector(`.exam-in[data-adm="${adm}"]`);
+        caData[currentSubject][adm] = {
+          ca: Number(caInput.value) || 0,
+          exam: Number(examInput.value) || 0
+        };
+      });
+
+      localStorage.setItem('dimah_ca_data', JSON.stringify(caData));
+      alert('Subject CA Scores saved successfully!');
+    }
+
+    // --- MASTER SHEET CALCULATIONS ---
+    function computeMasterData() {
+      const subjects = Object.keys(caData);
+      return students.map(s => {
+        let grandTotal = 0;
+        let subjScores = {};
+
+        subjects.forEach(sub => {
+          const scoreObj = caData[sub][s.adm] || { ca: 0, exam: 0 };
+          const total = Number(scoreObj.ca) + Number(scoreObj.exam);
+          subjScores[sub] = total;
+          grandTotal += total;
+        });
+
+        const avg = subjects.length ? (grandTotal / subjects.length).toFixed(1) : 0;
+        return { ...s, subjScores, grandTotal, avg: Number(avg) };
+      }).sort((a, b) => b.grandTotal - a.grandTotal)
+        .map((s, idx, arr) => ({ ...s, position: idx + 1 }));
+    }
+
+    function generateMasterSheet() {
+      const subjects = Object.keys(caData);
+      const masterData = computeMasterData();
+
+      const thead = document.querySelector('#master-table thead');
+      thead.innerHTML = `
+        <tr>
+          <th>Adm No</th>
+          <th>Student Name</th>
+          ${subjects.map(sub => `<th>${sub}</th>`).join('')}
+          <th>Total</th>
+          <th>Average</th>
+          <th>Position</th>
+        </tr>
+      `;
+
+      const tbody = document.querySelector('#master-table tbody');
+      tbody.innerHTML = masterData.map(s => `
+        <tr>
+          <td>${s.adm}</td>
+          <td>${s.name}</td>
+          ${subjects.map(sub => `<td>${s.subjScores[sub] || 0}</td>`).join('')}
+          <td><strong>${s.grandTotal}</strong></td>
+          <td>${s.avg}%</td>
+          <td><strong>${s.position}</strong></td>
+        </tr>
+      `).join('');
+    }
+
+    // --- REPORT CARD GENERATION ---
+    function populateReportSelect() {
+      const select = document.getElementById('report-student-select');
+      select.innerHTML = '<option value="">-- Select Student --</option>' + 
+        students.map(s => `<option value="${s.adm}">${s.name} (${s.adm})</option>`).join('');
+    }
+
+    function calculateGrade(score) {
+      if (score >= 70) return 'A';
+      if (score >= 60) return 'B';
+      if (sc
